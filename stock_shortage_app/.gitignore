@@ -1,0 +1,31 @@
+# Excel files
+*.xlsx
+*.XLSX
+*.xls
+*.xlsm
+*.csv
+*.xlsb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+venv/
+.venv/
+.env
+
+# Build directories
+build/
+dist/
+*.spec
+
+# Logs and outputs
+graphify-out/
+*.pdf
+
+# IDEs
+.DS_Store
+.idea/
+.vscode/

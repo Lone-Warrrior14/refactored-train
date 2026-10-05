@@ -1,0 +1,19 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.idea/
+.vscode/
+
+# Ignore large data and sample spreadsheets
+*.xlsx
+*.XLSX
+*.xls
+*.xlsm
+*.csv
+*.xlsb
+*.pdf
+test_script*.js
+

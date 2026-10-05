@@ -1,0 +1,2780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAP Product Availability Predictor</title>
+    <!-- Google Fonts & Chart.js -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --bg-card: rgba(26, 34, 52, 0.75);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #38bdf8;
+            --accent-purple: #818cf8;
+            --accent-rose: #f43f5e;
+            --accent-amber: #fbbf24;
+            --accent-emerald: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b 0%, #0b0f19 50%, #020617 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1380px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 28px;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .brand-text h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #ffffff, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-badge {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--accent-cyan);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Upload Box */
+        .upload-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-header {
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .section-header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Interactive Slicer Panel */
+        .slicers-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        .slicers-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 12px;
+        }
+
+        .slicers-header h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slicers-header .slicers-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slicers-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+        }
+
+        @media (max-width: 1300px) {
+            .slicers-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 850px) {
+            .slicers-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 550px) {
+            .slicers-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .slicer-box {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 220px;
+            max-height: 270px;
+        }
+
+        .slicer-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slicer-box-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .slicer-box-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .slicer-search {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .slicer-search:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .slicer-items-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding-right: 4px;
+            flex-grow: 1;
+        }
+
+        .slicer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+        }
+
+        .slicer-item:hover {
+            background: rgba(56, 189, 248, 0.08);
+            color: var(--text-main);
+            border-color: rgba(56, 189, 248, 0.2);
+        }
+
+        .slicer-item.active {
+            background: rgba(56, 189, 248, 0.18);
+            color: #ffffff;
+            border-color: rgba(56, 189, 248, 0.45);
+            font-weight: 600;
+        }
+
+        .slicer-item-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            overflow: hidden;
+        }
+
+        .slicer-checkbox {
+            width: 13px;
+            height: 13px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 10px;
+            color: transparent;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.15s ease;
+        }
+
+        .slicer-item.active .slicer-checkbox {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .slicer-item-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 135px;
+        }
+
+        .slicer-item-badge {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .slicer-item.active .slicer-item-badge {
+            background: rgba(56, 189, 248, 0.3);
+            color: #ffffff;
+        }
+
+        .slicer-item.project-item.active {
+            background: rgba(244, 63, 94, 0.2);
+            border-color: rgba(244, 63, 94, 0.5);
+            color: #fda4af;
+        }
+
+        .slicer-item.project-item.active .slicer-checkbox {
+            background: #f43f5e;
+            border-color: #f43f5e;
+            color: #fff;
+        }
+
+        .clear-filters-btn:hover {
+            background: rgba(244, 63, 94, 0.3);
+            border-color: #f43f5e;
+            color: #ffffff;
+        }
+
+        .slicer-summary-tag {
+            font-size: 11px;
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.35);
+            color: var(--accent-purple);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .upload-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-card:hover, .upload-card.dragover {
+            border-color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .upload-card input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: var(--accent-cyan);
+        }
+
+        .upload-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .upload-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .file-status {
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-emerald);
+            word-break: break-all;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 14px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), #2563eb);
+            color: white;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.95;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--accent-emerald), #059669);
+            color: white;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.95;
+            transform: translateY(-2px);
+        }
+
+        /* Loader */
+        #loader {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-cyan);
+        }
+
+        .kpi-card.critical::before { background: var(--accent-rose); }
+        .kpi-card.warning::before { background: var(--accent-amber); }
+        .kpi-card.success::before { background: var(--accent-emerald); }
+
+        .kpi-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .kpi-sub {
+            font-size: 12px;
+            margin-top: 6px;
+            color: var(--text-muted);
+        }
+
+        /* View Mode Switcher Pills */
+        .view-switcher {
+            display: flex;
+            gap: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-glass);
+        }
+
+        .view-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, var(--accent-cyan), #2563eb);
+            color: white;
+            box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+        }
+
+        /* Charts Layout */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .chart-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        /* Table Dashboard */
+        .dashboard-section {
+            display: none;
+        }
+
+        .table-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .table-header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .table-title {
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .table-filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-glass);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            width: 250px;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+        }
+
+        .so-filter-btn[data-so-filter="READY FOR FULL DELIVERY"].active {
+            background: rgba(16, 185, 129, 0.25) !important;
+            color: #10b981 !important;
+            border-color: #10b981 !important;
+        }
+
+        .so-filter-btn[data-so-filter="PARTIAL DELIVERY RISK"].active {
+            background: rgba(251, 191, 36, 0.25) !important;
+            color: #fbbf24 !important;
+            border-color: #fbbf24 !important;
+        }
+
+        .so-filter-btn[data-so-filter="UNFULFILLABLE (NO STOCK)"].active {
+            background: rgba(244, 63, 94, 0.25) !important;
+            color: #f43f5e !important;
+            border-color: #f43f5e !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 460px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 12px 14px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--border-glass);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-critical {
+            background: rgba(244, 63, 94, 0.15);
+            color: #fda4af;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .badge-risk {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fde047;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .badge-ok {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .depletion-highlight {
+            font-weight: 700;
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .depletion-ok {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        /* Error alert */
+        #errorAlert {
+            display: none;
+            background: rgba(244, 63, 94, 0.15);
+            border: 1px solid var(--accent-rose);
+            color: #fecdd3;
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        /* Modal Backdrop & Dialog */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-card {
+            background: #111827;
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            width: 92%;
+            max-width: 1000px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+            animation: modalFadeIn 0.25s ease-out;
+            overflow: hidden;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-glass);
+            margin-bottom: 16px;
+        }
+
+        .modal-close-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background: var(--accent-rose);
+            color: white;
+        }
+
+        .clickable-so-row {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .clickable-so-row:hover td {
+            background: rgba(129, 140, 248, 0.12) !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="brand-title">
+            <div class="brand-icon">📦</div>
+            <div class="brand-text">
+                <h1>SAP Product Availability Predictor</h1>
+                <p>Material Description & Article-Level Stock Depletion Forecasting Engine</p>
+            </div>
+        </div>
+
+        <div class="header-controls">
+            <div class="nav-badge">MB52 + COHV Engine</div>
+        </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <div class="section-header">
+            <h2>Upload SAP Datasets for Availability Prediction & Categorization</h2>
+            <p>Upload MB52 stock files (multi-file supported), COHV requirement files (Planned & Production Orders), and optional TIM file for categorization.</p>
+        </div>
+
+        <form id="predictorForm" enctype="multipart/form-data">
+            <div class="upload-grid">
+                <!-- MB52 Upload Card (Multi-file allowed) -->
+                <div class="upload-card" id="mb52Card">
+                    <input type="file" name="mb52_files" id="mb52Input" accept=".xlsx, .xls" multiple required>
+                    <div class="upload-icon">📊</div>
+                    <h3>MB52 Stock Files</h3>
+                    <p>Current Unrestricted Available Stock (.xlsx, multi-select allowed)</p>
+                    <div class="file-status" id="mb52Status">No files selected (Ctrl+Click for multiple)</div>
+                </div>
+
+                <!-- COHV Upload Card -->
+                <div class="upload-card" id="cohvCard">
+                    <input type="file" name="cohv_files" id="cohvInput" accept=".xlsx, .xls" multiple required>
+                    <div class="upload-icon">📅</div>
+                    <h3>COHV Requirement Files</h3>
+                    <p>Planned & Production Orders with Delivery Dates (.xlsx)</p>
+                    <div class="file-status" id="cohvStatus">No files selected (Ctrl+Click for multiple)</div>
+                </div>
+
+                <!-- TIM Upload Card -->
+                <div class="upload-card" id="timCard">
+                    <input type="file" name="tim_file" id="timInput" accept=".xlsx, .xls">
+                    <div class="upload-icon">🏷️</div>
+                    <h3>TIM Categorization File</h3>
+                    <p>Category, Sub Category, Country & Status (Optional .xlsx)</p>
+                    <div class="file-status" id="timStatus">No file selected (Optional)</div>
+                </div>
+            </div>
+
+            <div id="errorAlert"></div>
+
+            <div class="action-bar">
+                <button type="button" class="btn btn-secondary" id="downloadBtn">
+                    📥 Download Full Excel Report
+                </button>
+                <button type="submit" class="btn btn-primary" id="predictBtn">
+                    ⚡ Predict Stock Depletion Dates & Load Dashboard
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <h3 style="font-size: 16px; font-weight: 600;">Calculating Exact Stock Depletion Dates...</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">Matching demand order timelines chronologically against MB52 inventory.</p>
+    </div>
+
+    <!-- Dynamic Dashboard View -->
+    <div class="dashboard-section" id="dashboardView">
+        <!-- Interactive Multi-Dimensional Slicers Panel (PowerBI style) -->
+        <div class="slicers-card">
+            <div class="slicers-header">
+                <h2>🎛️ Interactive Dimension Slicers
+                    <span style="font-size:12px; font-weight:400; color:var(--text-muted); margin-left:8px;">(Updates KPIs, Graphs & Tables instantly)</span>
+                </h2>
+                <div class="slicers-actions">
+                    <span class="slicer-summary-tag" id="slicerSelectionSummary">All Records Active</span>
+                    <button type="button" class="clear-filters-btn" id="clearAllFiltersBtn">✕ Reset Slicers</button>
+                </div>
+            </div>
+
+            <div class="slicers-grid">
+                <!-- Slicer 1: Category (Multi-Select) -->
+                <div class="slicer-box" id="slicerCategoryBox">
+                    <div class="slicer-box-header">
+                        <span class="slicer-box-title">📁 Category</span>
+                        <span class="slicer-box-count" id="slicerCategoryCount">All</span>
+                    </div>
+                    <input type="text" class="slicer-search" id="categorySearchInput" placeholder="Search category...">
+                    <div class="slicer-items-list" id="slicerCategoryList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Slicer 2: Sub Category (Multi-Select) -->
+                <div class="slicer-box" id="slicerSubCategoryBox">
+                    <div class="slicer-box-header">
+                        <span class="slicer-box-title">📂 Sub Category</span>
+                        <span class="slicer-box-count" id="slicerSubCategoryCount">All</span>
+                    </div>
+                    <input type="text" class="slicer-search" id="subCategorySearchInput" placeholder="Search sub-category...">
+                    <div class="slicer-items-list" id="slicerSubCategoryList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Slicer 3: Country (Multi-Select) -->
+                <div class="slicer-box" id="slicerCountryBox">
+                    <div class="slicer-box-header">
+                        <span class="slicer-box-title">🌍 Country</span>
+                        <span class="slicer-box-count" id="slicerCountryCount">All</span>
+                    </div>
+                    <input type="text" class="slicer-search" id="countrySearchInput" placeholder="Search country...">
+                    <div class="slicer-items-list" id="slicerCountryList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Slicer 4: Article Status (Multi-Select) -->
+                <div class="slicer-box" id="slicerStatusBox">
+                    <div class="slicer-box-header">
+                        <span class="slicer-box-title">🏷️ Article Status</span>
+                        <span class="slicer-box-count" id="slicerStatusCount">All</span>
+                    </div>
+                    <input type="text" class="slicer-search" id="statusSearchInput" placeholder="Search status...">
+                    <div class="slicer-items-list" id="slicerStatusList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Slicer 5: Projects (Dedicated Multi-Select Slicer) -->
+                <div class="slicer-box" id="slicerProjectBox">
+                    <div class="slicer-box-header">
+                        <span class="slicer-box-title" style="color:#fb7185;">⭐ Projects (P-*)</span>
+                        <span class="slicer-box-count" id="slicerProjectCount">All</span>
+                    </div>
+                    <input type="text" class="slicer-search" id="projectSearchInput" placeholder="Search project type...">
+                    <div class="slicer-items-list" id="slicerProjectList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(6, 1fr);">
+            <div class="kpi-card success">
+                <div class="kpi-title">Initial Stock Value (MB52)</div>
+                <div class="kpi-value" id="kpiStock">SAR 0.00</div>
+                <div class="kpi-sub" id="kpiStockSub">Total Unrestricted Value</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Forecast Demand Value (COHV)</div>
+                <div class="kpi-value" id="kpiDemand">SAR 0.00</div>
+                <div class="kpi-sub" id="kpiDemandSub">Total Requirement Value</div>
+            </div>
+            <div class="kpi-card critical">
+                <div class="kpi-title">Items at Stockout Risk</div>
+                <div class="kpi-value" id="kpiRisk">0</div>
+                <div class="kpi-sub" id="kpiRiskSub">0 Critical 0-Stock</div>
+            </div>
+            <div class="kpi-card warning">
+                <div class="kpi-title">Overall Fulfillment Rate</div>
+                <div class="kpi-value" id="kpiFulfillment">0%</div>
+                <div class="kpi-sub">Demands Covered on Time</div>
+            </div>
+            <div class="kpi-card" style="border-left: 4px solid var(--accent-purple);">
+                <div class="kpi-title">Days on Hand (DOH)</div>
+                <div class="kpi-value" id="kpiDoh" style="color: var(--accent-purple);">0 Days</div>
+                <div class="kpi-sub" id="kpiDohSub">Overall Stock Coverage Runway</div>
+            </div>
+            <div class="kpi-card critical">
+                <div class="kpi-title">Earliest Stock Depletion Date</div>
+                <div class="kpi-value" id="kpiRunout" style="font-size: 16px; color: #f43f5e;">-</div>
+                <div class="kpi-sub">Earliest Stock Runout Date</div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; font-size: 14px;">Top Material Descriptions at Stockout Risk (Demand Qty vs Available Quantity)</h3>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button id="toggleScaleBtn" class="chart-ctrl-btn" style="padding: 4px 10px; font-size: 11px;">📊 Log Scale</button>
+                        <button id="resetZoomBtn" class="chart-ctrl-btn" style="padding: 4px 10px; font-size: 11px;">🔍 Reset Zoom</button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Sales Order Delivery Fulfillment</h3>
+                <div class="chart-wrapper">
+                    <canvas id="soChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Prediction Table Card -->
+        <div class="table-card">
+
+            <div class="table-header-controls">
+                <div class="table-title">
+                    <span>Stock Depletion Date & Availability Predictions</span>
+                    <div class="view-switcher">
+                        <button class="view-btn active" id="viewByMaterial">By Material Description</button>
+                        <button class="view-btn" id="viewByArticle">By Article ID</button>
+                    </div>
+                </div>
+                <div class="table-filters">
+                    <input type="text" class="search-box" id="mainSearch" placeholder="Search Material Description or Article...">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="CRITICAL STOCKOUT">Critical</button>
+                    <button class="filter-btn" data-filter="STOCKOUT RISK">Risk</button>
+                    <button class="filter-btn" data-filter="SUFFICIENT STOCK">Sufficient</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead id="mainTableHead">
+                    </thead>
+                    <tbody id="mainTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination Controls for Main Table -->
+            <div id="mainTablePagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-glass); flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 12px; color: var(--text-muted);" id="mainTablePageInfo">Showing 0 of 0 records</div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button class="filter-btn" id="mainPrevPageBtn" style="padding: 4px 10px;">◀ Prev</button>
+                    <span id="mainPageIndicator" style="font-size: 12px; font-weight: 600; color: var(--accent-cyan); padding: 0 6px;">Page 1</span>
+                    <button class="filter-btn" id="mainNextPageBtn" style="padding: 4px 10px;">Next ▶</button>
+                    <select id="mainPageSizeSelect" style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-glass); color: var(--text-main); font-size: 12px; border-radius: 6px; padding: 4px 8px; margin-left: 8px;">
+                        <option value="50">50 / page</option>
+                        <option value="100" selected>100 / page</option>
+                        <option value="250">250 / page</option>
+                        <option value="500">500 / page</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Order Fulfillment Table -->
+        <div class="table-card">
+            <div class="table-header-controls">
+                <div class="table-title">Sales Order On-Time Fulfillment Forecast</div>
+                <div class="table-filters">
+                    <input type="text" class="search-box" id="soSearch" placeholder="Search Sales Order #...">
+                    <button class="filter-btn active so-filter-btn" data-so-filter="all">All</button>
+                    <button class="filter-btn so-filter-btn" data-so-filter="READY FOR FULL DELIVERY">Ready (100%)</button>
+                    <button class="filter-btn so-filter-btn" data-so-filter="PARTIAL DELIVERY RISK">Partial Risk</button>
+                    <button class="filter-btn so-filter-btn" data-so-filter="UNFULFILLABLE (NO STOCK)">Unfulfillable</button>
+                    <button type="button" class="btn btn-secondary" id="downloadSoExcelBtn" style="padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                        📥 Download Sales Orders (.xlsx)
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sales Document</th>
+                            <th>Line Items</th>
+                            <th>Total Order Qty</th>
+                            <th>Deliverable Qty</th>
+                            <th>Shortage Qty</th>
+                            <th>Delivery Window</th>
+                            <th>Fulfillment %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="soTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination Controls for Sales Order Table -->
+            <div id="soTablePagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-glass); flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 12px; color: var(--text-muted);" id="soTablePageInfo">Showing 0 of 0 records</div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button class="filter-btn" id="soPrevPageBtn" style="padding: 4px 10px;">◀ Prev</button>
+                    <span id="soPageIndicator" style="font-size: 12px; font-weight: 600; color: var(--accent-purple); padding: 0 6px;">Page 1</span>
+                    <button class="filter-btn" id="soNextPageBtn" style="padding: 4px 10px;">Next ▶</button>
+                    <select id="soPageSizeSelect" style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-glass); color: var(--text-main); font-size: 12px; border-radius: 6px; padding: 4px 8px; margin-left: 8px;">
+                        <option value="50">50 / page</option>
+                        <option value="100" selected>100 / page</option>
+                        <option value="250">250 / page</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Order Line Item Drilldown Modal -->
+<div id="soModal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <h2 id="modalSoTitle" style="font-size:20px; font-weight:700; color:var(--accent-purple);">Sales Document #</h2>
+                    <span id="modalSoBadge" class="badge"></span>
+                </div>
+                <p id="modalSoSub" style="font-size:12px; color:var(--text-muted); margin-top:4px;"></p>
+            </div>
+            <button class="modal-close-btn" id="closeSoModalBtn">&times;</button>
+        </div>
+
+        <div style="padding-bottom:12px;">
+            <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
+                <div class="kpi-card" style="padding:12px 16px;">
+                    <div class="kpi-title" style="font-size:11px;">Total Ordered</div>
+                    <div class="kpi-value" id="modalOrderedQty" style="font-size:18px;">0</div>
+                </div>
+                <div class="kpi-card success" style="padding:12px 16px;">
+                    <div class="kpi-title" style="font-size:11px;">Deliverable Qty</div>
+                    <div class="kpi-value" id="modalDeliverableQty" style="font-size:18px; color:#10b981;">0</div>
+                </div>
+                <div class="kpi-card critical" style="padding:12px 16px;">
+                    <div class="kpi-title" style="font-size:11px;">Missing Qty</div>
+                    <div class="kpi-value" id="modalShortageQty" style="font-size:18px; color:#f43f5e;">0</div>
+                </div>
+                <div class="kpi-card warning" style="padding:12px 16px;">
+                    <div class="kpi-title" style="font-size:11px;">Fulfillment Rate</div>
+                    <div class="kpi-value" id="modalFulfillmentPct" style="font-size:18px;">0%</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="font-size:14px; font-weight:600; color:var(--text-main);">Itemized Shortage Inspection</h3>
+                <div class="table-filters">
+                    <button class="filter-btn active modal-tab-btn" data-modal-filter="all">All Line Items</button>
+                    <button class="filter-btn modal-tab-btn" data-modal-filter="missing" style="border-color:rgba(244, 63, 94, 0.4); color:#fda4af;">
+                        ⚠️ Missing Items Only
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 380px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Article</th>
+                            <th>Material Description</th>
+                            <th>Requirement Date</th>
+                            <th>Ordered Qty</th>
+                            <th>Fulfilled Qty</th>
+                            <th style="color:#f43f5e;">Missing Qty</th>
+                            <th>Available Stock (MB52)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Item Shortage Impact Modal -->
+<div id="itemImpactModal" class="modal-backdrop">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <h2 id="itemImpactTitle" style="font-size:20px; font-weight:700; color:var(--accent-cyan);">Item Impact Analysis</h2>
+                    <span id="itemImpactBadge" class="badge badge-critical"></span>
+                </div>
+                <p id="itemImpactSub" style="font-size:12px; color:var(--text-muted); margin-top:4px;"></p>
+            </div>
+            <button class="modal-close-btn" id="closeItemImpactModalBtn">&times;</button>
+        </div>
+
+        <div style="padding-bottom:12px;">
+            <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 16px;">
+                <div class="kpi-card" style="padding:12px 16px; border-left:4px solid var(--accent-cyan);">
+                    <div class="kpi-title" style="font-size:11px;">Total Demand (No. of Orders)</div>
+                    <div class="kpi-value" id="itemImpactTotalDemand" style="font-size:20px; color:var(--accent-cyan);">0</div>
+                </div>
+                <div class="kpi-card critical" style="padding:12px 16px;">
+                    <div class="kpi-title" style="font-size:11px;">Impacted Sales Orders (SICs)</div>
+                    <div class="kpi-value" id="itemImpactSicCount" style="font-size:20px; color:#f43f5e;">0</div>
+                </div>
+                <div class="kpi-card warning" style="padding:12px 16px;">
+                    <div class="kpi-title" style="font-size:11px;">Total Shortage Quantity</div>
+                    <div class="kpi-value" id="itemImpactTotalShortage" style="font-size:20px; color:#fbbf24;">0</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="font-size:14px; font-weight:600; color:var(--text-main);">Sales Orders Blocked By This Shortage</h3>
+                <button id="copyImpactedSicsBtn" class="filter-btn" style="padding:4px 10px; font-size:11px; border-color:var(--accent-purple); color:var(--accent-purple);">
+                    📋 Copy All Sales Order Numbers
+                </button>
+            </div>
+
+            <div id="impactedSicsSummaryBox" style="display:none; margin-bottom:12px; padding:10px 14px; background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); border-radius:8px;">
+                <div style="font-size:11px; font-weight:600; color:#f43f5e; margin-bottom:4px;">UNFULFILLABLE SALES ORDER NUMBERS:</div>
+                <div id="impactedSicsListText" style="font-size:12px; font-weight:700; color:var(--text-main); word-break:break-all; font-family:monospace;"></div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 380px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sales Document (SIC)</th>
+                            <th>Requirement Date</th>
+                            <th>Ordered Qty</th>
+                            <th>Fulfilled Qty</th>
+                            <th style="color:#f43f5e;">Shortage Qty</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemImpactTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const mb52Input = document.getElementById('mb52Input');
+    const cohvInput = document.getElementById('cohvInput');
+    const timInput = document.getElementById('timInput');
+    const mb52Status = document.getElementById('mb52Status');
+    const cohvStatus = document.getElementById('cohvStatus');
+    const timStatus = document.getElementById('timStatus');
+
+    mb52Input.addEventListener('change', () => {
+        if (mb52Input.files.length === 1) {
+            mb52Status.innerText = '✔ Selected: ' + mb52Input.files[0].name;
+        } else if (mb52Input.files.length > 1) {
+            mb52Status.innerText = `✔ Selected ${mb52Input.files.length} MB52 file(s)`;
+        } else {
+            mb52Status.innerText = 'No files selected (Ctrl+Click for multiple)';
+        }
+    });
+
+    cohvInput.addEventListener('change', () => {
+        cohvStatus.innerText = cohvInput.files.length > 0 ? `✔ Selected ${cohvInput.files.length} file(s)` : 'No files selected';
+    });
+
+    if (timInput) {
+        timInput.addEventListener('change', () => {
+            timStatus.innerText = timInput.files.length > 0 ? '✔ Selected: ' + timInput.files[0].name : 'No file selected (Optional)';
+        });
+    }
+
+    const predictorForm = document.getElementById('predictorForm');
+    const predictBtn = document.getElementById('predictBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const loader = document.getElementById('loader');
+    const dashboardView = document.getElementById('dashboardView');
+    const errorAlert = document.getElementById('errorAlert');
+
+    const viewByMaterial = document.getElementById('viewByMaterial');
+    const viewByArticle = document.getElementById('viewByArticle');
+
+    let currentViewMode = 'material';
+    let globalMatRows = [];
+    let globalArtRows = [];
+    let globalSoRows = [];
+    let globalSoLineDict = {};
+    let globalItemImpactDict = {};
+    let currentModalSoDoc = null;
+    let activeModalFilter = 'all';
+    let riskChartInstance = null;
+    let soChartInstance = null;
+    let isLogScale = false;
+
+    // Multi-Category & Dimension filter states
+    let selectedCategories = new Set(); // empty means 'all'
+    let selectedCountry = 'all';
+    let selectedArticleStatus = 'all';
+    let selectedProjectFilter = 'all'; // 'all' or 'project_only'
+
+    const toggleScaleBtn = document.getElementById('toggleScaleBtn');
+    const resetZoomBtn = document.getElementById('resetZoomBtn');
+
+    if (toggleScaleBtn) {
+        toggleScaleBtn.addEventListener('click', () => {
+            isLogScale = !isLogScale;
+            toggleScaleBtn.innerText = isLogScale ? '📊 Linear Scale' : '📊 Log Scale';
+            toggleScaleBtn.style.background = isLogScale ? 'var(--accent-purple)' : '';
+            if (riskChartInstance) {
+                riskChartInstance.options.scales.y.type = isLogScale ? 'logarithmic' : 'linear';
+                riskChartInstance.update();
+            }
+        });
+    }
+
+    if (resetZoomBtn) {
+        resetZoomBtn.addEventListener('click', () => {
+            if (riskChartInstance && riskChartInstance.resetZoom) {
+                riskChartInstance.resetZoom();
+            }
+        });
+    }
+
+    viewByMaterial.addEventListener('click', () => {
+        viewByMaterial.classList.add('active');
+        viewByArticle.classList.remove('active');
+        currentViewMode = 'material';
+        applyAllSlicers();
+    });
+
+    viewByArticle.addEventListener('click', () => {
+        viewByArticle.classList.add('active');
+        viewByMaterial.classList.remove('active');
+        currentViewMode = 'article';
+        applyAllSlicers();
+    });
+
+    predictorForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        fetchPredictions();
+    });
+
+    async function fetchPredictions() {
+        if (!mb52Input.files || mb52Input.files.length === 0 || !cohvInput.files || cohvInput.files.length === 0) {
+            showError("Please select at least one MB52 stock file and at least one COHV requirement file.");
+            return;
+        }
+
+        hideError();
+        loader.style.display = 'block';
+        dashboardView.style.display = 'none';
+
+        const formData = new FormData(predictorForm);
+        formData.append('format', 'json');
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+
+            const data = await response.json();
+            loader.style.display = 'none';
+
+            if (!response.ok || !data.success) {
+                showError(data.error || "An error occurred during prediction processing.");
+                return;
+            }
+
+            renderDashboard(data);
+        } catch (err) {
+            loader.style.display = 'none';
+            showError("Server error: " + err.message);
+        }
+    }
+
+    downloadBtn.addEventListener('click', async () => {
+        if (!mb52Input.files || mb52Input.files.length === 0 || !cohvInput.files || cohvInput.files.length === 0) {
+            showError("Please select MB52 file(s) and COHV file(s) before downloading.");
+            return;
+        }
+        hideError();
+
+        const formData = new FormData(predictorForm);
+        formData.append('format', 'excel');
+
+        downloadBtn.disabled = true;
+        downloadBtn.innerText = '⏳ Generating Excel...';
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Material_Availability_Review_${new Date().toISOString().slice(0,10)}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (err) {
+            showError("Download failed: " + err.message);
+        } finally {
+            downloadBtn.disabled = false;
+            downloadBtn.innerText = '📥 Download Full Excel Report';
+        }
+    });
+
+    const downloadSoExcelBtn = document.getElementById('downloadSoExcelBtn');
+    downloadSoExcelBtn.addEventListener('click', async () => {
+        if (!globalSoRows || globalSoRows.length === 0) {
+            if (!mb52Input.files[0] || cohvInput.files.length === 0) {
+                showError("Please select MB52 file and COHV files before downloading.");
+                return;
+            }
+            hideError();
+            downloadSoExcelBtn.disabled = true;
+            downloadSoExcelBtn.innerText = '⏳ Generating...';
+
+            const formData = new FormData(predictorForm);
+            formData.append('format', 'so_excel');
+
+            try {
+                const response = await fetch('/predict', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(await response.text());
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Sales_Order_Fulfillment_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (err) {
+                showError("Download failed: " + err.message);
+            } finally {
+                downloadSoExcelBtn.disabled = false;
+                downloadSoExcelBtn.innerText = '📥 Download Sales Orders (.xlsx)';
+            }
+            return;
+        }
+
+        hideError();
+        try {
+            if (typeof XLSX !== 'undefined') {
+                const exportData = globalSoRows.map(r => ({
+                    'Sales Document': r['Sales Document'],
+                    'Line Items': r.Total_Line_Items,
+                    'Total Order Qty': r.Total_Ordered_Qty,
+                    'Deliverable Qty': r.Deliverable_Qty,
+                    'Shortage Qty': r.Shortage_Qty,
+                    'Delivery Window': `${r.Earliest_Delivery_Date} → ${r.Latest_Delivery_Date}`,
+                    'Fulfillment %': `${r.SO_Fulfillment_Pct}%`,
+                    'Status': r.SO_Status
+                }));
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Sales_Order_Fulfillment");
+                ws['!cols'] = [
+                    { wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 16 },
+                    { wch: 16 }, { wch: 28 }, { wch: 15 }, { wch: 25 }
+                ];
+                XLSX.writeFile(wb, `Sales_Order_Fulfillment_${new Date().toISOString().slice(0,10)}.xlsx`);
+            } else {
+                const formData = new FormData(predictorForm);
+                formData.append('format', 'so_excel');
+                const response = await fetch('/predict', { method: 'POST', body: formData });
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Sales_Order_Fulfillment_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
+        } catch (err) {
+            showError("Export failed: " + err.message);
+        }
+    });
+
+    function showError(msg) {
+        errorAlert.innerText = '⚠️ ' + msg;
+        errorAlert.style.display = 'block';
+    }
+
+    function hideError() {
+        errorAlert.style.display = 'none';
+    }
+
+    function renderDashboard(data) {
+        dashboardView.style.display = 'block';
+        const kpis = data.kpis || {};
+
+        const fmtCurr = (val) => 'SAR ' + (val || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        try {
+            document.getElementById('kpiStock').innerText = fmtCurr(kpis.total_stock_val);
+            document.getElementById('kpiStockSub').innerText = `${(kpis.total_stock || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} Unrestricted Units`;
+
+            document.getElementById('kpiDemand').innerText = fmtCurr(kpis.total_demand_val);
+            document.getElementById('kpiDemandSub').innerText = `${(kpis.total_demand || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} Requirement Qty`;
+
+            document.getElementById('kpiRisk').innerText = ((kpis.critical_count || 0) + (kpis.risk_count || 0)).toLocaleString();
+            document.getElementById('kpiRiskSub').innerText = `${kpis.critical_count || 0} Critical 0-Stock | Shortage: ${fmtCurr(kpis.total_shortage_val)}`;
+            document.getElementById('kpiFulfillment').innerText = (kpis.fulfillment_rate !== undefined ? kpis.fulfillment_rate : 0) + '%';
+            
+            const dohVal = kpis.days_on_hand !== undefined ? kpis.days_on_hand : 0;
+            document.getElementById('kpiDoh').innerText = dohVal >= 999 ? '30+ Days' : `${dohVal} Days`;
+            document.getElementById('kpiDohSub').innerText = dohVal >= 999 ? 'Sufficient Stock Coverage' : `~${fmtCurr((kpis.total_demand_val || 0) / 30)} / Day`;
+            
+            document.getElementById('kpiRunout').innerText = kpis.earliest_depletion || 'N/A';
+        } catch (kpiErr) {
+            console.error('Error rendering KPIs:', kpiErr);
+        }
+
+        globalMatRows = Array.isArray(data.mat_table_rows) ? data.mat_table_rows : [];
+        globalArtRows = Array.isArray(data.art_table_rows) ? data.art_table_rows : [];
+        globalSoRows = Array.isArray(data.so_table_rows) ? data.so_table_rows : [];
+        globalSoLineDict = data.so_line_dict || {};
+        globalItemImpactDict = data.item_impact_dict || {};
+
+        // Render charts initial state
+        try {
+            renderCharts(data.top_risk_materials, data.so_status_counts);
+        } catch (chartErr) {
+            console.error('Error in initial renderCharts:', chartErr);
+        }
+
+        // Precompute all dimension indices, maps, and lookups for instantaneous slicer clicks
+        try {
+            initPrecomputedIndices(data);
+        } catch (idxErr) {
+            console.error('Error in initPrecomputedIndices:', idxErr);
+        }
+
+        // Build and initialize interactive multi-select slicers
+        try {
+            setupSlicers();
+        } catch (slicerErr) {
+            console.error('Error in setupSlicers:', slicerErr);
+        }
+
+        // Apply slicer filtering to dynamically compute KPIs, Charts, and Tables
+        try {
+            applyAllSlicers();
+        } catch (applyErr) {
+            console.error('Error in applyAllSlicers:', applyErr);
+        }
+    }
+
+    // Pagination state for ultra-fast rendering
+    let mainCurrentPage = 1;
+    let mainPageSize = 100;
+    let currentMainFilteredRows = [];
+
+    let soCurrentPage = 1;
+    let soPageSize = 100;
+    let currentSoFilteredRows = [];
+
+    // Precalculated index cache from load time to ensure 0-lag slicer clicks
+    let precomputedFilterOptions = null;
+    let precomputedArtIndices = []; // { cat, subCat, country, status, isProj, artId, row, searchStr }
+    let precomputedMatMap = new Map(); // artId -> array of associated mat row references
+    let precomputedSoLineMap = new Map(); // cleanSoKey -> Set of article IDs
+
+    function initPrecomputedIndices(data) {
+        precomputedFilterOptions = data.filter_options || null;
+        precomputedArtIndices = [];
+        precomputedMatMap.clear();
+        precomputedSoLineMap.clear();
+
+        // 1. Index Articles for O(1) attribute matching and instant filtering
+        for (let i = 0; i < globalArtRows.length; i++) {
+            const r = globalArtRows[i];
+            const artId = String(r.Article || '');
+            const isProj = (r.Is_Project === 'Yes' || artId.toUpperCase().startsWith('P'));
+            const cat = String(r.Category || 'Uncategorized');
+            const subCat = String(r['Sub Category'] || 'Uncategorized');
+            const country = (r.Country && r.Country !== 'N/A') ? String(r.Country) : 'Other / Unassigned';
+            const status = String(r['Article Status'] || 'Active');
+            const searchStr = `${artId} ${r['Material Description'] || ''} ${cat} ${subCat}`.toLowerCase();
+
+            precomputedArtIndices.push({
+                artId,
+                cat,
+                subCat,
+                country,
+                status,
+                isProj,
+                projectKey: isProj ? '⭐ Project Items (P-*)' : 'Standard / Non-Project',
+                row: r,
+                searchStr
+            });
+        }
+
+        // 2. Index Materials by article ID for instant association lookup
+        for (let i = 0; i < globalMatRows.length; i++) {
+            const m = globalMatRows[i];
+            const assoc = String(m.Associated_Articles || '').split(',');
+            for (let j = 0; j < assoc.length; j++) {
+                const aId = assoc[j].trim();
+                if (aId) {
+                    let arr = precomputedMatMap.get(aId);
+                    if (!arr) {
+                        arr = [];
+                        precomputedMatMap.set(aId, arr);
+                    }
+                    arr.push(m);
+                }
+            }
+        }
+
+        // 3. Pre-index SO lines for instant O(1) slicer matching
+        for (const [soKey, lines] of Object.entries(globalSoLineDict)) {
+            const artSet = new Set();
+            if (Array.isArray(lines)) {
+                for (let k = 0; k < lines.length; k++) {
+                    if (lines[k] && lines[k].Article) artSet.add(String(lines[k].Article));
+                }
+            }
+            precomputedSoLineMap.set(soKey, artSet);
+        }
+    }
+
+    // Slicer selections state (Sets allow multi-selection)
+    let slicerCategorySet = new Set();
+    let slicerSubCategorySet = new Set();
+    let slicerCountrySet = new Set();
+    let slicerStatusSet = new Set();
+    let slicerProjectSet = new Set();
+
+    // Helper to render a slicer selectable list with precomputed counts
+    function renderSlicerList(containerId, countBadgeId, searchInputId, itemsMap, selectedSet, totalCount, onSelectionChange) {
+        const listEl = document.getElementById(containerId);
+        const countEl = document.getElementById(countBadgeId);
+        const searchEl = document.getElementById(searchInputId);
+        if (!listEl) return;
+
+        let entries = Object.entries(itemsMap).sort((a, b) => b[1] - a[1]);
+
+        function buildHtml(filterText = '') {
+            const search = (filterText || '').toLowerCase().trim();
+            let filtered = entries.filter(([k]) => !search || k.toLowerCase().includes(search));
+
+            let html = '';
+            const allSelected = selectedSet.size === 0;
+            html += `
+                <div class="slicer-item ${allSelected ? 'active' : ''}" data-value="__ALL__">
+                    <div class="slicer-item-left">
+                        <div class="slicer-checkbox">${allSelected ? '✓' : ''}</div>
+                        <span class="slicer-item-name">(All Items)</span>
+                    </div>
+                    <span class="slicer-item-badge">${totalCount !== undefined ? totalCount : globalArtRows.length}</span>
+                </div>
+            `;
+
+            for (let i = 0; i < filtered.length; i++) {
+                const [name, count] = filtered[i];
+                const isSel = selectedSet.has(name);
+                const isProj = name.toUpperCase().includes('PROJECT');
+                html += `
+                    <div class="slicer-item ${isProj ? 'project-item' : ''} ${isSel ? 'active' : ''}" data-value="${name.replace(/"/g, '&quot;')}">
+                        <div class="slicer-item-left">
+                            <div class="slicer-checkbox">${isSel ? '✓' : ''}</div>
+                            <span class="slicer-item-name" title="${name}">${name}</span>
+                        </div>
+                        <span class="slicer-item-badge">${count}</span>
+                    </div>
+                `;
+            }
+
+            listEl.innerHTML = html;
+
+            // Bind click events with zero lag
+            listEl.querySelectorAll('.slicer-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const val = item.getAttribute('data-value');
+                    if (val === '__ALL__') {
+                        selectedSet.clear();
+                    } else {
+                        if (selectedSet.has(val)) {
+                            selectedSet.delete(val);
+                        } else {
+                            selectedSet.add(val);
+                        }
+                    }
+                    if (onSelectionChange) {
+                        onSelectionChange();
+                    } else {
+                        updateSlicerHeaders();
+                        applyAllSlicers();
+                    }
+                });
+            });
+        }
+
+        buildHtml();
+
+        if (searchEl) {
+            searchEl.value = '';
+            searchEl.oninput = () => buildHtml(searchEl.value);
+        }
+    }
+
+    function setupSlicers() {
+        const fo = precomputedFilterOptions || {};
+
+        // Use precomputed counts directly if available (zero loop delay!)
+        let catCounts = fo.cat_counts;
+        let countryCounts = fo.country_counts;
+        let statusCounts = fo.status_counts;
+        let projectCounts = fo.project_counts;
+
+        if (!catCounts) {
+            catCounts = {};
+            countryCounts = {};
+            statusCounts = {};
+            let pCount = 0;
+            let npCount = 0;
+            for (let i = 0; i < precomputedArtIndices.length; i++) {
+                const item = precomputedArtIndices[i];
+                catCounts[item.cat] = (catCounts[item.cat] || 0) + 1;
+                countryCounts[item.country] = (countryCounts[item.country] || 0) + 1;
+                statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+                if (item.isProj) pCount++;
+                else npCount++;
+            }
+            projectCounts = {
+                '⭐ Project Items (P-*)': pCount,
+                'Standard / Non-Project': npCount
+            };
+        }
+
+        // Render Category Slicer (when category changes, update SubCategory slicer cascaded!)
+        renderSlicerList('slicerCategoryList', 'slicerCategoryCount', 'categorySearchInput', catCounts, slicerCategorySet, globalArtRows.length, () => {
+            renderSubCategorySlicer();
+            updateSlicerHeaders();
+            applyAllSlicers();
+        });
+
+        // Render SubCategory Slicer (dynamically restricted to selected categories)
+        renderSubCategorySlicer();
+
+        // Render Country Slicer
+        renderSlicerList('slicerCountryList', 'slicerCountryCount', 'countrySearchInput', countryCounts, slicerCountrySet, globalArtRows.length, () => {
+            updateSlicerHeaders();
+            applyAllSlicers();
+        });
+
+        // Render Status Slicer
+        renderSlicerList('slicerStatusList', 'slicerStatusCount', 'statusSearchInput', statusCounts, slicerStatusSet, globalArtRows.length, () => {
+            updateSlicerHeaders();
+            applyAllSlicers();
+        });
+
+        // Render Dedicated Project Slicer
+        renderSlicerList('slicerProjectList', 'slicerProjectCount', 'projectSearchInput', projectCounts, slicerProjectSet, globalArtRows.length, () => {
+            updateSlicerHeaders();
+            applyAllSlicers();
+        });
+
+        updateSlicerHeaders();
+
+        // Clear all slicers button
+        const clearBtn = document.getElementById('clearAllFiltersBtn');
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                slicerCategorySet.clear();
+                slicerSubCategorySet.clear();
+                slicerCountrySet.clear();
+                slicerStatusSet.clear();
+                slicerProjectSet.clear();
+                activeStatusFilter = 'all';
+                mainCurrentPage = 1;
+                soCurrentPage = 1;
+                document.getElementById('mainSearch').value = '';
+                document.querySelectorAll('.slicer-search').forEach(s => s.value = '');
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => {
+                    b.classList.toggle('active', b.getAttribute('data-filter') === 'all');
+                });
+                renderSubCategorySlicer();
+                updateSlicerHeaders();
+                applyAllSlicers();
+            };
+        }
+    }
+
+    // Instant cascading Sub Category Slicer using precomputed category-to-subcategory mapping
+    function renderSubCategorySlicer() {
+        const subCatCounts = {};
+        let totalMatchingArt = 0;
+        const fo = precomputedFilterOptions;
+
+        if (fo && fo.cat_to_sub_map) {
+            const catsToInclude = slicerCategorySet.size === 0 ? Object.keys(fo.cat_to_sub_map) : Array.from(slicerCategorySet);
+            for (let i = 0; i < catsToInclude.length; i++) {
+                const c = catsToInclude[i];
+                const subObj = fo.cat_to_sub_map[c];
+                if (subObj) {
+                    for (const [sub, cnt] of Object.entries(subObj)) {
+                        subCatCounts[sub] = (subCatCounts[sub] || 0) + cnt;
+                        totalMatchingArt += cnt;
+                    }
+                }
+            }
+        } else {
+            for (let i = 0; i < precomputedArtIndices.length; i++) {
+                const item = precomputedArtIndices[i];
+                if (slicerCategorySet.size === 0 || slicerCategorySet.has(item.cat)) {
+                    totalMatchingArt++;
+                    subCatCounts[item.subCat] = (subCatCounts[item.subCat] || 0) + 1;
+                }
+            }
+        }
+
+        // Prune any previously selected subcategories that are not in the selected categories
+        const availableSubCats = new Set(Object.keys(subCatCounts));
+        for (const sub of Array.from(slicerSubCategorySet)) {
+            if (!availableSubCats.has(sub)) {
+                slicerSubCategorySet.delete(sub);
+            }
+        }
+
+        renderSlicerList('slicerSubCategoryList', 'slicerSubCategoryCount', 'subCategorySearchInput', subCatCounts, slicerSubCategorySet, totalMatchingArt, () => {
+            updateSlicerHeaders();
+            applyAllSlicers();
+        });
+    }
+
+    function updateSlicerHeaders() {
+        document.getElementById('slicerCategoryCount').innerText = slicerCategorySet.size > 0 ? `${slicerCategorySet.size} selected` : 'All';
+        document.getElementById('slicerSubCategoryCount').innerText = slicerSubCategorySet.size > 0 ? `${slicerSubCategorySet.size} selected` : 'All';
+        document.getElementById('slicerCountryCount').innerText = slicerCountrySet.size > 0 ? `${slicerCountrySet.size} selected` : 'All';
+        document.getElementById('slicerStatusCount').innerText = slicerStatusSet.size > 0 ? `${slicerStatusSet.size} selected` : 'All';
+        const projCountEl = document.getElementById('slicerProjectCount');
+        if (projCountEl) {
+            projCountEl.innerText = slicerProjectSet.size > 0 ? `${slicerProjectSet.size} selected` : 'All';
+        }
+
+        const totalFilters = slicerCategorySet.size + slicerSubCategorySet.size + slicerCountrySet.size + slicerStatusSet.size + slicerProjectSet.size;
+        const sumEl = document.getElementById('slicerSelectionSummary');
+        if (sumEl) {
+            sumEl.innerText = totalFilters > 0 ? `Active Slicers: ${totalFilters} filter(s) applied` : 'All Records Active';
+            sumEl.style.color = totalFilters > 0 ? 'var(--accent-cyan)' : 'var(--accent-purple)';
+            sumEl.style.borderColor = totalFilters > 0 ? 'var(--accent-cyan)' : 'rgba(129, 140, 248, 0.35)';
+        }
+
+        const updateBoxActive = (boxId, set) => {
+            const list = document.getElementById(boxId);
+            if (!list) return;
+            const items = list.getElementsByClassName('slicer-item');
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const val = item.getAttribute('data-value');
+                const cb = item.querySelector('.slicer-checkbox');
+                if (val === '__ALL__') {
+                    const isAll = set.size === 0;
+                    item.classList.toggle('active', isAll);
+                    if (cb) cb.innerText = isAll ? '✓' : '';
+                } else {
+                    const isSel = set.has(val);
+                    item.classList.toggle('active', isSel);
+                    if (cb) cb.innerText = isSel ? '✓' : '';
+                }
+            }
+        };
+
+        updateBoxActive('slicerCategoryList', slicerCategorySet);
+        updateBoxActive('slicerSubCategoryList', slicerSubCategorySet);
+        updateBoxActive('slicerCountryList', slicerCountrySet);
+        updateBoxActive('slicerStatusList', slicerStatusSet);
+        updateBoxActive('slicerProjectList', slicerProjectSet);
+    }
+
+    // Ultra-optimized master function using pre-indexed arrays
+    function applyAllSlicers() {
+        const search = (document.getElementById('mainSearch').value || '').toLowerCase().trim();
+        const hasCat = slicerCategorySet.size > 0;
+        const hasSubCat = slicerSubCategorySet.size > 0;
+        const hasCountry = slicerCountrySet.size > 0;
+        const hasStatus = slicerStatusSet.size > 0;
+        const hasProj = slicerProjectSet.size > 0;
+
+        const slicedArticles = [];
+        const slicedArticleIds = new Set();
+        const matchedMatSet = new Set();
+
+        // 1. Instant single-pass filtering through precomputed index
+        for (let i = 0; i < precomputedArtIndices.length; i++) {
+            const item = precomputedArtIndices[i];
+            if (hasCat && !slicerCategorySet.has(item.cat)) continue;
+            if (hasSubCat && !slicerSubCategorySet.has(item.subCat)) continue;
+            if (hasCountry && !slicerCountrySet.has(item.country)) continue;
+            if (hasStatus && !slicerStatusSet.has(item.status)) continue;
+            if (hasProj && !slicerProjectSet.has(item.projectKey)) continue;
+
+            slicedArticles.push(item.row);
+            slicedArticleIds.add(item.artId);
+
+            const mats = precomputedMatMap.get(item.artId);
+            if (mats) {
+                for (let k = 0; k < mats.length; k++) {
+                    matchedMatSet.add(mats[k]);
+                }
+            }
+        }
+
+        const slicedMaterials = Array.from(matchedMatSet);
+
+        // 2. Recalculate KPIs dynamically
+        updateDynamicKPIs(slicedArticles);
+
+        // 3. Update Charts dynamically
+        updateDynamicCharts(slicedMaterials, slicedArticles);
+
+        // 4. Update Main Prediction Table (with pagination)
+        applyMainTableFilter(slicedMaterials, slicedArticles, search);
+
+        // 5. Update Sales Orders Table (with pagination)
+        applySoSlicerFilter(slicedArticleIds);
+    }
+
+    function updateDynamicKPIs(articles) {
+        let totStockVal = 0;
+        let totStockUnits = 0;
+        let totDemandVal = 0;
+        let totDemandUnits = 0;
+        let totShortageVal = 0;
+        let totShortageUnits = 0;
+        let criticalCount = 0;
+        let riskCount = 0;
+        let earliestDepletion = 'No Depletion Expected';
+        let minDepletionDays = 999;
+
+        for (let i = 0; i < articles.length; i++) {
+            const a = articles[i];
+            totStockVal += (Number(a.Initial_Stock_Value) || 0);
+            totStockUnits += (Number(a.Initial_Stock_MB52) || 0);
+            totDemandVal += (Number(a.Total_Demand_Value) || 0);
+            totDemandUnits += (Number(a.Total_Future_Demand) || 0);
+            totShortageVal += (Number(a.Total_Shortage_Value) || 0);
+            totShortageUnits += (Number(a.Total_Shortage_Qty) || 0);
+
+            if (a.Status === 'CRITICAL STOCKOUT') criticalCount++;
+            else if (a.Status === 'STOCKOUT RISK') riskCount++;
+
+            const days = a.Days_Until_Depletion !== undefined ? a.Days_Until_Depletion : 999;
+            if (days < minDepletionDays) {
+                minDepletionDays = days;
+                earliestDepletion = a.Stock_Depletion_Date || 'Immediate Depletion';
+            }
+        }
+
+        const fmtCurr = (val) => 'SAR ' + (val || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        document.getElementById('kpiStock').innerText = fmtCurr(totStockVal);
+        document.getElementById('kpiStockSub').innerText = `${totStockUnits.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} Unrestricted Units`;
+
+        document.getElementById('kpiDemand').innerText = fmtCurr(totDemandVal);
+        document.getElementById('kpiDemandSub').innerText = `${totDemandUnits.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} Requirement Qty`;
+
+        document.getElementById('kpiRisk').innerText = (criticalCount + riskCount).toLocaleString();
+        document.getElementById('kpiRiskSub').innerText = `${criticalCount} Critical 0-Stock | Shortage: ${fmtCurr(totShortageVal)}`;
+
+        const fulfillment = totDemandUnits > 0 ? Math.min(100.0, Math.round(((totDemandUnits - totShortageUnits) / totDemandUnits * 100.0) * 10) / 10) : 100.0;
+        document.getElementById('kpiFulfillment').innerText = fulfillment + '%';
+
+        const dailyDemandVal = totDemandVal / 30.0;
+        const doh = dailyDemandVal > 0 ? Math.round((totStockVal / dailyDemandVal) * 10) / 10 : (totStockVal > 0 ? 999.0 : 0.0);
+        document.getElementById('kpiDoh').innerText = doh >= 999 ? '30+ Days' : `${doh} Days`;
+        document.getElementById('kpiDohSub').innerText = doh >= 999 ? 'Sufficient Stock Coverage' : `~${fmtCurr(dailyDemandVal)} / Day`;
+
+        document.getElementById('kpiRunout').innerText = earliestDepletion;
+    }
+
+    function updateDynamicCharts(materials, articles) {
+        const topRisk = [];
+        for (let i = 0; i < materials.length; i++) {
+            if ((Number(materials[i].Total_Shortage_Qty) || 0) > 0) {
+                topRisk.push(materials[i]);
+            }
+        }
+        topRisk.sort((a, b) => (Number(b.Total_Shortage_Qty) || 0) - (Number(a.Total_Shortage_Qty) || 0));
+        const top10 = topRisk.slice(0, 10);
+
+        const articleSet = new Set(articles.map(a => String(a.Article)));
+        const soCounts = {};
+        for (let i = 0; i < globalSoRows.length; i++) {
+            const so = globalSoRows[i];
+            const cleanKey = cleanSoKey(so['Sales Document']);
+            const soArts = precomputedSoLineMap.get(cleanKey);
+            let hasMatch = false;
+            if (soArts) {
+                for (const aId of soArts) {
+                    if (articleSet.has(aId)) {
+                        hasMatch = true;
+                        break;
+                    }
+                }
+            }
+            if (hasMatch) {
+                soCounts[so.SO_Status] = (soCounts[so.SO_Status] || 0) + 1;
+            }
+        }
+
+        renderCharts(top10, soCounts);
+    }
+
+    function renderCharts(topRiskMaterials, soCounts) {
+        try {
+            const riskCanvas = document.getElementById('riskChart');
+            if (riskCanvas) {
+                const riskCtx = riskCanvas.getContext('2d');
+                if (riskChartInstance) riskChartInstance.destroy();
+
+                const safeRisk = Array.isArray(topRiskMaterials) ? topRiskMaterials : [];
+                const labels = safeRisk.map(m => {
+                    const desc = String(m['Material Description'] || 'Unknown');
+                    return desc.length > 22 ? desc.substring(0, 22) + '...' : desc;
+                });
+                const stocks = safeRisk.map(m => Number(m.Initial_Stock_MB52) || 0);
+                const demands = safeRisk.map(m => Number(m.Total_Future_Demand) || 0);
+
+                riskChartInstance = new Chart(riskCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Available Quantity (MB52)', data: stocks, backgroundColor: '#38bdf8' },
+                            { label: 'Demand Qty', data: demands, backgroundColor: '#f43f5e' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#94a3b8' } },
+                            zoom: {
+                                pan: { enabled: true, mode: 'xy' },
+                                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8', font: { size: 10 } } },
+                            y: {
+                                type: isLogScale ? 'logarithmic' : 'linear',
+                                ticks: { color: '#94a3b8' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const soCanvas = document.getElementById('soChart');
+            if (soCanvas) {
+                const soCtx = soCanvas.getContext('2d');
+                if (soChartInstance) soChartInstance.destroy();
+
+                const statusColorMap = {
+                    'READY FOR FULL DELIVERY': '#10b981',
+                    'PARTIAL DELIVERY RISK': '#fbbf24',
+                    'UNFULFILLABLE (NO STOCK)': '#f43f5e'
+                };
+                const safeCounts = soCounts || {};
+                const chartLabels = Object.keys(safeCounts);
+                const chartColors = chartLabels.map(l => statusColorMap[l] || '#38bdf8');
+
+                soChartInstance = new Chart(soCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartLabels.length > 0 ? chartLabels : ['No Orders'],
+                        datasets: [{
+                            data: chartLabels.length > 0 ? Object.values(safeCounts) : [1],
+                            backgroundColor: chartLabels.length > 0 ? chartColors : ['rgba(255,255,255,0.1)']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } }
+                    }
+                });
+            }
+        } catch (chartErr) {
+            console.error('Error rendering charts:', chartErr);
+        }
+    }
+
+    function applyMainTableFilter(slicedMaterials, slicedArticles, search) {
+        const sourceRows = currentViewMode === 'material' ? slicedMaterials : slicedArticles;
+        const filtered = [];
+
+        for (let i = 0; i < sourceRows.length; i++) {
+            const r = sourceRows[i];
+            if (activeStatusFilter !== 'all' && r.Status !== activeStatusFilter) continue;
+            if (search) {
+                const s = search.toLowerCase();
+                const text = `${r.Article || ''} ${r['Material Description'] || ''} ${r.Associated_Articles || ''} ${r.Category || ''} ${r['Sub Category'] || ''}`.toLowerCase();
+                if (!text.includes(s)) continue;
+            }
+            filtered.push(r);
+        }
+
+        currentMainFilteredRows = filtered;
+        mainCurrentPage = 1;
+        renderMainTablePage();
+    }
+
+    function renderMainTablePage() {
+        const thead = document.getElementById('mainTableHead');
+        const tbody = document.getElementById('mainTableBody');
+        const mode = currentViewMode;
+
+        if (mode === 'material') {
+            thead.innerHTML = `
+                <tr>
+                    <th>Material Description</th>
+                    <th>Associated Articles</th>
+                    <th>Available Stock (MB52)</th>
+                    <th>Future Demand</th>
+                    <th>Net Balance</th>
+                    <th>Coverage %</th>
+                    <th>Impacted Sales Orders (SICs)</th>
+                    <th style="color:#f43f5e;">📅 Stock Depletion Date</th>
+                    <th>Runway / Days</th>
+                    <th>Status</th>
+                </tr>
+            `;
+        } else {
+            thead.innerHTML = `
+                <tr>
+                    <th>Article</th>
+                    <th>Category</th>
+                    <th>Sub Category</th>
+                    <th>Country</th>
+                    <th>Material Description</th>
+                    <th>Available Stock (MB52)</th>
+                    <th>Future Demand</th>
+                    <th>Net Balance</th>
+                    <th>Coverage %</th>
+                    <th>Impacted Sales Orders (SICs)</th>
+                    <th style="color:#f43f5e;">📅 Stock Depletion Date</th>
+                    <th>Runway / Days</th>
+                    <th>Status</th>
+                </tr>
+            `;
+        }
+
+        const total = currentMainFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / mainPageSize));
+        if (mainCurrentPage > totalPages) mainCurrentPage = totalPages;
+        const startIdx = (mainCurrentPage - 1) * mainPageSize;
+        const endIdx = Math.min(startIdx + mainPageSize, total);
+        const pagedRows = currentMainFilteredRows.slice(startIdx, endIdx);
+
+        // Update pagination indicator
+        const pageInfoEl = document.getElementById('mainTablePageInfo');
+        if (pageInfoEl) pageInfoEl.innerText = `Showing ${total > 0 ? (startIdx + 1) : 0}-${endIdx} of ${total.toLocaleString()} records`;
+        const pageIndEl = document.getElementById('mainPageIndicator');
+        if (pageIndEl) pageIndEl.innerText = `Page ${mainCurrentPage} of ${totalPages}`;
+
+        const prevBtn = document.getElementById('mainPrevPageBtn');
+        if (prevBtn) prevBtn.disabled = mainCurrentPage <= 1;
+        const nextBtn = document.getElementById('mainNextPageBtn');
+        if (nextBtn) nextBtn.disabled = mainCurrentPage >= totalPages;
+
+        if (total === 0) {
+            tbody.innerHTML = `<tr><td colspan="${mode === 'material' ? 10 : 13}" style="text-align:center; color: var(--text-muted); padding: 24px;">No matching predictions found.</td></tr>`;
+            return;
+        }
+
+        // Fast HTML string build instead of heavy createElement DOM calls
+        let rowsHtml = '';
+        for (let i = 0; i < pagedRows.length; i++) {
+            const r = pagedRows[i];
+            let badgeClass = 'badge-ok';
+            if (r.Status === 'CRITICAL STOCKOUT') badgeClass = 'badge-critical';
+            else if (r.Status === 'STOCKOUT RISK') badgeClass = 'badge-risk';
+
+            const stockDisplay = r.Initial_Stock_MB52 <= 0 ? 
+                `<span style="color:#f43f5e; font-weight:600;">0</span>` : 
+                `<span style="color:#10b981; font-weight:600;">${r.Initial_Stock_MB52.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span>`;
+
+            const unfulfilledCount = r.Unfulfilled_Orders_Count || 0;
+            const totalCount = r.Total_Orders_Count || 0;
+            const itemKey = mode === 'material' ? (r['Material Description'] || '') : (r.Article || '');
+            const safeItemKey = itemKey.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+            const unfulfilledDisplay = unfulfilledCount > 0 ? 
+                `<span style="color:#f43f5e; font-weight:700; cursor:pointer;" onclick="openItemImpactModal('${safeItemKey}')">⚠️ ${unfulfilledCount} SICs Impacted (${unfulfilledCount}/${totalCount})</span>` : 
+                `<span style="color:#10b981; font-weight:600;">✅ 0 SICs Impacted (${totalCount} Total)</span>`;
+
+            let depletionDisplay = '';
+            if (r.Status === 'SUFFICIENT STOCK' || r.Stock_Depletion_Date === 'No Depletion Expected') {
+                depletionDisplay = `<span class="depletion-ok">✅ No Depletion Expected</span>`;
+            } else if (r.Status === 'CRITICAL STOCKOUT') {
+                depletionDisplay = `<span class="depletion-highlight" style="background:rgba(244,63,94,0.2); border-color:#f43f5e; color:#fecdd3;">⚠️ ${r.Stock_Depletion_Date}</span>`;
+            } else {
+                depletionDisplay = `<span class="depletion-highlight">📅 ${r.Stock_Depletion_Date}</span>`;
+            }
+
+            let daysDisplay = '';
+            if (r.Days_Until_Depletion === 999) {
+                daysDisplay = '<span style="color:#10b981;">30+ Days</span>';
+            } else if (r.Days_Until_Depletion < 0) {
+                daysDisplay = `<span style="color:#f43f5e; font-weight:600;">Overdue (${Math.abs(r.Days_Until_Depletion)}d ago)</span>`;
+            } else if (r.Days_Until_Depletion === 0) {
+                daysDisplay = `<span style="color:#fbbf24; font-weight:600;">0 Days (Today)</span>`;
+            } else {
+                daysDisplay = `${r.Days_Until_Depletion} Days`;
+            }
+
+            if (mode === 'material') {
+                rowsHtml += `
+                    <tr>
+                        <td style="font-weight:600; color:var(--accent-cyan); cursor:pointer;" onclick="openItemImpactModal('${safeItemKey}')">🔍 ${r['Material Description']}</td>
+                        <td style="font-size:11px; color:var(--text-muted);">${r.Associated_Articles || '-'}</td>
+                        <td>${stockDisplay}</td>
+                        <td>${r.Total_Future_Demand.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                        <td style="color: ${r.Net_Projected_Balance < 0 ? '#f43f5e' : '#10b981'}; font-weight:600;">${r.Net_Projected_Balance.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                        <td>${r.Stock_Coverage_Pct}%</td>
+                        <td>${unfulfilledDisplay}</td>
+                        <td>${depletionDisplay}</td>
+                        <td>${daysDisplay}</td>
+                        <td><span class="badge ${badgeClass}">${r.Status}</span></td>
+                    </tr>
+                `;
+            } else {
+                const isProject = r.Is_Project === 'Yes' || String(r.Article).toUpperCase().startsWith('P');
+                const projectTag = isProject ? `<span class="badge-project" style="margin-left:6px;">PROJECT</span>` : '';
+                const categoryCell = isProject ? 
+                    `<span style="color:#fda4af; font-weight:700;">${r.Category || 'Project'}</span>` : 
+                    `<span style="color:var(--text-main); font-weight:500;">${r.Category || '-'}</span>`;
+
+                rowsHtml += `
+                    <tr>
+                        <td style="font-weight: 600; color: var(--accent-cyan); cursor:pointer;" onclick="openItemImpactModal('${safeItemKey}')">🔍 ${r.Article} ${projectTag}</td>
+                        <td>${categoryCell}</td>
+                        <td style="font-size:12px; color:var(--text-muted);">${r['Sub Category'] || '-'}</td>
+                        <td style="font-size:12px; color:var(--accent-purple);">${r.Country || '-'}</td>
+                        <td>${r['Material Description'] || r.Article}</td>
+                        <td>${stockDisplay}</td>
+                        <td>${r.Total_Future_Demand.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                        <td style="color: ${r.Net_Projected_Balance < 0 ? '#f43f5e' : '#10b981'}; font-weight:600;">${r.Net_Projected_Balance.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                        <td>${r.Stock_Coverage_Pct}%</td>
+                        <td>${unfulfilledDisplay}</td>
+                        <td>${depletionDisplay}</td>
+                        <td>${daysDisplay}</td>
+                        <td><span class="badge ${badgeClass}">${r.Status}</span></td>
+                    </tr>
+                `;
+            }
+        }
+        tbody.innerHTML = rowsHtml;
+    }
+
+    function applySoSlicerFilter(slicedArticleIds) {
+        const search = (document.getElementById('soSearch').value || '').toLowerCase().trim();
+        const filtered = [];
+
+        for (let i = 0; i < globalSoRows.length; i++) {
+            const r = globalSoRows[i];
+            const cleanKey = cleanSoKey(r['Sales Document']);
+            const soArts = precomputedSoLineMap.get(cleanKey);
+
+            if (soArts && soArts.size > 0) {
+                let matchesSlicer = false;
+                for (const aId of soArts) {
+                    if (slicedArticleIds.has(aId)) {
+                        matchesSlicer = true;
+                        break;
+                    }
+                }
+                if (!matchesSlicer) continue;
+            }
+
+            if (activeSoFilter !== 'all' && r.SO_Status !== activeSoFilter) continue;
+            if (search) {
+                const sDoc = String(r['Sales Document']).toLowerCase();
+                if (!sDoc.includes(search)) {
+                    const lines = globalSoLineDict[cleanKey] || [];
+                    const lineMatch = lines.some(l => 
+                        (l.Article && String(l.Article).toLowerCase().includes(search)) ||
+                        (l['Material Description'] && String(l['Material Description']).toLowerCase().includes(search))
+                    );
+                    if (!lineMatch) continue;
+                }
+            }
+            filtered.push(r);
+        }
+
+        currentSoFilteredRows = filtered;
+        soCurrentPage = 1;
+        renderSoTablePage();
+    }
+
+    function renderSoTablePage() {
+        const tbody = document.getElementById('soTableBody');
+        const total = currentSoFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / soPageSize));
+        if (soCurrentPage > totalPages) soCurrentPage = totalPages;
+        const startIdx = (soCurrentPage - 1) * soPageSize;
+        const endIdx = Math.min(startIdx + soPageSize, total);
+        const pagedRows = currentSoFilteredRows.slice(startIdx, endIdx);
+
+        // Update pagination indicator
+        const pageInfoEl = document.getElementById('soTablePageInfo');
+        if (pageInfoEl) pageInfoEl.innerText = `Showing ${total > 0 ? (startIdx + 1) : 0}-${endIdx} of ${total.toLocaleString()} records`;
+        const pageIndEl = document.getElementById('soPageIndicator');
+        if (pageIndEl) pageIndEl.innerText = `Page ${soCurrentPage} of ${totalPages}`;
+
+        const prevBtn = document.getElementById('soPrevPageBtn');
+        if (prevBtn) prevBtn.disabled = soCurrentPage <= 1;
+        const nextBtn = document.getElementById('soNextPageBtn');
+        if (nextBtn) nextBtn.disabled = soCurrentPage >= totalPages;
+
+        if (total === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No matching sales orders found.</td></tr>`;
+            return;
+        }
+
+        let rowsHtml = '';
+        for (let i = 0; i < pagedRows.length; i++) {
+            const r = pagedRows[i];
+            let badgeClass = 'badge-ok';
+            if (r.SO_Status.includes('UNFULFILLABLE')) badgeClass = 'badge-critical';
+            else if (r.SO_Status.includes('PARTIAL')) badgeClass = 'badge-risk';
+
+            rowsHtml += `
+                <tr class="clickable-so-row" onclick="openSoModal('${r['Sales Document']}')" title="Click row to inspect missing line items">
+                    <td style="font-weight:600; color:var(--accent-purple);">
+                        <span style="border-bottom: 1px dashed var(--accent-purple);">🔍 ${r['Sales Document']}</span>
+                    </td>
+                    <td>${r.Total_Line_Items}</td>
+                    <td>${r.Total_Ordered_Qty.toLocaleString()}</td>
+                    <td>${r.Deliverable_Qty.toLocaleString()}</td>
+                    <td style="color:${r.Shortage_Qty > 0 ? '#f43f5e' : '#10b981'}; font-weight:600;">${r.Shortage_Qty.toLocaleString()}</td>
+                    <td>${r.Earliest_Delivery_Date} → ${r.Latest_Delivery_Date}</td>
+                    <td>${r.SO_Fulfillment_Pct}%</td>
+                    <td><span class="badge ${badgeClass}">${r.SO_Status}</span></td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = rowsHtml;
+    }
+
+    function cleanSoKey(val) {
+        if (val === null || val === undefined) return '';
+        return String(val).trim().replace(/\.0$/, '');
+    }
+
+    function openSoModal(soDoc, soHeaderData) {
+        currentModalSoDoc = cleanSoKey(soDoc);
+        const modal = document.getElementById('soModal');
+        const lineItems = globalSoLineDict[currentModalSoDoc] || globalSoLineDict[String(soDoc)] || [];
+
+        const totalOrdered = soHeaderData ? soHeaderData.Total_Ordered_Qty : lineItems.reduce((s, x) => s + (x.Ordered_Qty || 0), 0);
+        const totalDeliverable = soHeaderData ? soHeaderData.Deliverable_Qty : lineItems.reduce((s, x) => s + (x.Fulfilled_Qty || 0), 0);
+        const totalShortage = soHeaderData ? soHeaderData.Shortage_Qty : lineItems.reduce((s, x) => s + (x.Shortage_Qty || 0), 0);
+        const fulfillmentPct = soHeaderData ? soHeaderData.SO_Fulfillment_Pct : (totalOrdered > 0 ? ((totalDeliverable / totalOrdered) * 100).toFixed(1) : 100);
+        const status = soHeaderData ? soHeaderData.SO_Status : (totalShortage <= 0.0001 ? 'READY FOR FULL DELIVERY' : (totalDeliverable > 0.0001 ? 'PARTIAL DELIVERY RISK' : 'UNFULFILLABLE (NO STOCK)'));
+
+        let badgeClass = 'badge-ok';
+        if (status.includes('UNFULFILLABLE')) badgeClass = 'badge-critical';
+        else if (status.includes('PARTIAL')) badgeClass = 'badge-risk';
+
+        document.getElementById('modalSoTitle').innerText = `Sales Document #${currentModalSoDoc}`;
+        document.getElementById('modalSoBadge').className = `badge ${badgeClass}`;
+        document.getElementById('modalSoBadge').innerText = status;
+        document.getElementById('modalSoSub').innerText = lineItems.length > 0 ? 
+            `Containing ${lineItems.length} line item(s) | Delivery Window: ${soHeaderData ? soHeaderData.Earliest_Delivery_Date + ' → ' + soHeaderData.Latest_Delivery_Date : 'N/A'}` : 
+            'Line item detail view';
+
+        document.getElementById('modalOrderedQty').innerText = totalOrdered.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        document.getElementById('modalDeliverableQty').innerText = totalDeliverable.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        document.getElementById('modalShortageQty').innerText = totalShortage.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        document.getElementById('modalFulfillmentPct').innerText = `${fulfillmentPct}%`;
+
+        activeModalFilter = 'all';
+        document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+        const defaultTab = document.querySelector('.modal-tab-btn[data-modal-filter="all"]');
+        if (defaultTab) defaultTab.classList.add('active');
+
+        renderModalTable(lineItems);
+        modal.style.display = 'flex';
+    }
+
+    function renderModalTable(items) {
+        const tbody = document.getElementById('modalTableBody');
+        tbody.innerHTML = '';
+
+        const filtered = items.filter(item => {
+            if (activeModalFilter === 'missing') {
+                return (item.Shortage_Qty > 0.0001) || 
+                       (item.Line_Status && (item.Line_Status.includes('PARTIAL') || item.Line_Status.includes('STOCKOUT')));
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 20px;">No items match this filter.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(item => {
+            const hasShortage = (item.Shortage_Qty > 0.0001) || (item.Line_Status && !item.Line_Status.includes('FULLY COVERED'));
+            let statusBadge = hasShortage ? 
+                (item.Fulfilled_Qty > 0 ? '<span class="badge badge-risk">PARTIALLY COVERED</span>' : '<span class="badge badge-critical">STOCKOUT / SHORTAGE</span>') : 
+                '<span class="badge badge-ok">FULLY COVERED</span>';
+
+            const tr = document.createElement('tr');
+            if (hasShortage) {
+                tr.style.background = 'rgba(244, 63, 94, 0.08)';
+            }
+            const availAtDate = (item.Opening_Stock_Balance !== undefined && item.Opening_Stock_Balance !== null) ? Math.max(0, item.Opening_Stock_Balance) : item.Initial_Stock_MB52;
+            tr.innerHTML = `
+                <td style="font-weight:600; color:var(--accent-cyan); cursor:pointer;" title="Click to view shortage impact report for Article ${item.Article}" onclick="openItemImpactModal('${item.Article.replace(/'/g, "\\'")}')">🔍 ${item.Article}</td>
+                <td>${item['Material Description'] || item.Article}</td>
+                <td>${item.Requirement_Date || 'N/A'}</td>
+                <td>${item.Ordered_Qty.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                <td>${item.Fulfilled_Qty.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                <td style="color:${hasShortage ? '#f43f5e' : '#10b981'}; font-weight:700;">${hasShortage ? '⚠️ ' + item.Shortage_Qty.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2}) : '0'}</td>
+                <td>${availAtDate.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} <span style="font-size:0.75rem; color:var(--text-muted);">(Start: ${item.Initial_Stock_MB52.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})})</span></td>
+                <td>${statusBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function searchSoByArticle(articleId) {
+        document.getElementById('soModal').style.display = 'none';
+        const soSearch = document.getElementById('soSearch');
+        if (soSearch) {
+            soSearch.value = articleId;
+            applyAllSlicers();
+            const soCard = document.getElementById('soTableBody').closest('.table-card');
+            if (soCard) {
+                soCard.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    }
+
+    // Modal to inspect all impacted Sales Order documents (SICs) for an item
+    function openItemImpactModal(itemKey) {
+        const modal = document.getElementById('itemImpactModal');
+        if (!modal) return;
+
+        // Try exact key or string-converted key from globalItemImpactDict
+        const cleanKey = String(itemKey).trim();
+        let impactData = globalItemImpactDict[cleanKey] || globalItemImpactDict[itemKey];
+
+        // If not directly found in dictionary, search within globalArtRows / globalMatRows or construct on the fly
+        if (!impactData) {
+            // Find in globalArtRows
+            const artMatch = globalArtRows.find(a => String(a.Article) === cleanKey || String(a['Material Description']) === cleanKey);
+            // Search in globalSoLineDict for all SO lines requesting this article or material
+            const impactedSos = [];
+            let totOrders = 0;
+            let totDemand = 0;
+            let totShortage = 0;
+            const seenSos = new Set();
+
+            for (const [soDoc, lines] of Object.entries(globalSoLineDict)) {
+                if (Array.isArray(lines)) {
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        const match = (artMatch && (String(line.Article) === String(artMatch.Article) || String(line['Material Description']) === String(artMatch['Material Description']))) ||
+                                      (String(line.Article) === cleanKey || String(line['Material Description']) === cleanKey);
+                        if (match) {
+                            seenSos.add(soDoc);
+                            totDemand += Number(line.Ordered_Qty || line['Requirement quantity (EINHEIT)'] || 0);
+                            const shQty = Number(line.Shortage_Qty || 0);
+                            if (shQty > 0.0001) {
+                                totShortage += shQty;
+                                impactedSos.push({
+                                    'Sales Document': soDoc,
+                                    'Requirement_Date': line.Requirement_Date || line['Requirement date_str'] || 'N/A',
+                                    'Ordered_Qty': Number(line.Ordered_Qty || line['Requirement quantity (EINHEIT)'] || 0),
+                                    'Fulfilled_Qty': Number(line.Fulfilled_Qty || 0),
+                                    'Shortage_Qty': shQty
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            impactData = {
+                'Material_Description': artMatch ? artMatch['Material Description'] : cleanKey,
+                'Article': artMatch ? artMatch.Article : cleanKey,
+                'Impacted_SICs_Count': impactedSos.length,
+                'Total_Demand_Orders': seenSos.size,
+                'Total_Demand_Qty': totDemand,
+                'Total_Shortage_Qty': totShortage,
+                'Impacted_Sales_Orders': impactedSos
+            };
+        }
+
+        const impactedList = impactData.Impacted_Sales_Orders || [];
+        const sicCount = impactData.Impacted_SICs_Count !== undefined ? impactData.Impacted_SICs_Count : impactedList.length;
+        const totalShortage = impactData.Total_Shortage_Qty || 0;
+        const totalDemandOrders = impactData.Total_Demand_Orders || 0;
+
+        document.getElementById('itemImpactTitle').innerText = `Impact Analysis: ${impactData.Article || cleanKey}`;
+        document.getElementById('itemImpactSub').innerText = impactData.Material_Description ? `Material: ${impactData.Material_Description}` : '';
+        
+        const badge = document.getElementById('itemImpactBadge');
+        if (badge) {
+            badge.className = sicCount > 0 ? 'badge badge-critical' : 'badge badge-ok';
+            badge.innerText = sicCount > 0 ? `⚠️ ${sicCount} Blocked Order(s)` : '✅ No Blocked Orders';
+        }
+
+        document.getElementById('itemImpactTotalDemand').innerText = totalDemandOrders.toLocaleString();
+        document.getElementById('itemImpactSicCount').innerText = sicCount.toLocaleString();
+        document.getElementById('itemImpactTotalShortage').innerText = totalShortage.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+
+        // Summary box of SO numbers
+        const summaryBox = document.getElementById('impactedSicsSummaryBox');
+        const listText = document.getElementById('impactedSicsListText');
+        const soNumbers = Array.from(new Set(impactedList.map(s => String(s['Sales Document']).trim()))).filter(Boolean);
+
+        if (summaryBox && listText) {
+            if (soNumbers.length > 0) {
+                summaryBox.style.display = 'block';
+                listText.innerText = soNumbers.join(', ');
+            } else {
+                summaryBox.style.display = 'none';
+                listText.innerText = '';
+            }
+        }
+
+        // Copy button setup
+        const copyBtn = document.getElementById('copyImpactedSicsBtn');
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                if (soNumbers.length > 0) {
+                    navigator.clipboard.writeText(soNumbers.join(', ')).then(() => {
+                        const original = copyBtn.innerText;
+                        copyBtn.innerText = '✅ Copied to Clipboard!';
+                        setTimeout(() => { copyBtn.innerText = original; }, 2000);
+                    });
+                }
+            };
+        }
+
+        // Populate Table Body
+        const tbody = document.getElementById('itemImpactTableBody');
+        if (tbody) {
+            if (impactedList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#10b981; padding:24px; font-weight:600;">✅ Excellent! All orders requesting this item are 100% fulfilled.</td></tr>`;
+            } else {
+                let html = '';
+                impactedList.forEach(so => {
+                    const docNum = String(so['Sales Document']).trim();
+                    const reqDate = so.Requirement_Date || 'N/A';
+                    const ordQty = (Number(so.Ordered_Qty) || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+                    const fulQty = (Number(so.Fulfilled_Qty) || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+                    const shQty = (Number(so.Shortage_Qty) || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+
+                    html += `
+                        <tr>
+                            <td style="font-weight:700; color:var(--accent-cyan); font-family:monospace;">${docNum}</td>
+                            <td>${reqDate}</td>
+                            <td>${ordQty}</td>
+                            <td style="color:#10b981; font-weight:600;">${fulQty}</td>
+                            <td style="color:#f43f5e; font-weight:700;">⚠️ ${shQty}</td>
+                            <td>
+                                <button class="filter-btn" style="padding:4px 8px; font-size:11px;" onclick="document.getElementById('itemImpactModal').style.display='none'; openSoModal('${docNum.replace(/'/g, "\\'")}');">
+                                    🔍 Inspect SO
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            }
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    // Bind item impact modal close events
+    const closeImpactBtn = document.getElementById('closeItemImpactModalBtn');
+    if (closeImpactBtn) {
+        closeImpactBtn.addEventListener('click', () => {
+            document.getElementById('itemImpactModal').style.display = 'none';
+        });
+    }
+
+    const itemImpactModalEl = document.getElementById('itemImpactModal');
+    if (itemImpactModalEl) {
+        itemImpactModalEl.addEventListener('click', (e) => {
+            if (e.target === itemImpactModalEl) {
+                itemImpactModalEl.style.display = 'none';
+            }
+        });
+    }
+
+    document.querySelectorAll('.modal-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeModalFilter = btn.getAttribute('data-modal-filter');
+            const cleanKey = cleanSoKey(currentModalSoDoc);
+            const lineItems = globalSoLineDict[cleanKey] || globalSoLineDict[currentModalSoDoc] || [];
+            renderModalTable(lineItems);
+        });
+    });
+
+    document.getElementById('closeSoModalBtn').addEventListener('click', () => {
+        document.getElementById('soModal').style.display = 'none';
+    });
+
+    document.getElementById('soModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('soModal')) {
+            document.getElementById('soModal').style.display = 'none';
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.getElementById('soModal').style.display = 'none';
+            document.getElementById('itemImpactModal').style.display = 'none';
+        }
+    });
+
+    let activeStatusFilter = 'all';
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeStatusFilter = btn.getAttribute('data-filter') || 'all';
+            applyAllSlicers();
+        });
+    });
+
+    document.getElementById('mainSearch').addEventListener('input', () => {
+        applyAllSlicers();
+    });
+
+    let activeSoFilter = 'all';
+    document.querySelectorAll('.so-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.so-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeSoFilter = btn.getAttribute('data-so-filter');
+            applyAllSlicers();
+        });
+    });
+
+    document.getElementById('soSearch').addEventListener('input', () => {
+        applyAllSlicers();
+    });
+
+    // Main Table Pagination Event Listeners
+    const mainPrevBtn = document.getElementById('mainPrevPageBtn');
+    if (mainPrevBtn) {
+        mainPrevBtn.addEventListener('click', () => {
+            if (mainCurrentPage > 1) {
+                mainCurrentPage--;
+                renderMainTablePage();
+            }
+        });
+    }
+
+    const mainNextBtn = document.getElementById('mainNextPageBtn');
+    if (mainNextBtn) {
+        mainNextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(currentMainFilteredRows.length / mainPageSize);
+            if (mainCurrentPage < totalPages) {
+                mainCurrentPage++;
+                renderMainTablePage();
+            }
+        });
+    }
+
+    const mainPageSizeSelect = document.getElementById('mainPageSizeSelect');
+    if (mainPageSizeSelect) {
+        mainPageSizeSelect.addEventListener('change', (e) => {
+            mainPageSize = parseInt(e.target.value, 10) || 100;
+            mainCurrentPage = 1;
+            renderMainTablePage();
+        });
+    }
+
+    // Sales Order Table Pagination Event Listeners
+    const soPrevBtn = document.getElementById('soPrevPageBtn');
+    if (soPrevBtn) {
+        soPrevBtn.addEventListener('click', () => {
+            if (soCurrentPage > 1) {
+                soCurrentPage--;
+                renderSoTablePage();
+            }
+        });
+    }
+
+    const soNextBtn = document.getElementById('soNextPageBtn');
+    if (soNextBtn) {
+        soNextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(currentSoFilteredRows.length / soPageSize);
+            if (soCurrentPage < totalPages) {
+                soCurrentPage++;
+                renderSoTablePage();
+            }
+        });
+    }
+
+    const soPageSizeSelect = document.getElementById('soPageSizeSelect');
+    if (soPageSizeSelect) {
+        soPageSizeSelect.addEventListener('change', (e) => {
+            soPageSize = parseInt(e.target.value, 10) || 100;
+            soCurrentPage = 1;
+            renderSoTablePage();
+        });
+    }
+</script>
+</body>
+</html>
